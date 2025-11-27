@@ -1,0 +1,136 @@
+
+========================================
+OCCUPANCY DETECTION DEMO - SETUP GUIDE
+========================================
+
+STEP 1: Install Required Libraries
+==================================
+
+Run this command in your terminal:
+
+pip install opencv-python ultralytics torch
+
+Or if you want to install all at once:
+
+pip install -r requirements.txt
+
+
+STEP 2: Prepare Your Environment
+=================================
+
+Create a new folder for the project:
+
+mkdir occupancy_demo
+cd occupancy_demo
+
+Place the 'occupancy_demo.py' file in this folder.
+
+
+STEP 3: Run the Demo
+====================
+
+Simply execute:
+
+python occupancy_demo.py
+
+
+STEP 4: Use During Demo
+=======================
+
+Live Demo Controls:
+- Press 'q' : Quit the application
+- Press 's' : Take a screenshot (saved as occupancy_screenshot_*.jpg)
+
+Watch the output for:
+✓ OCCUPANCY DETECTED (Green status) - One or more people in view
+✗ NO OCCUPANCY (Red status)        - No people detected
+
+Console Output includes:
+- Frame count
+- Number of persons detected
+- FPS (frames per second)
+- Inference time (model processing time in milliseconds)
+
+
+STEP 5: What to Expect
+======================
+
+Initial Run:
+- First run will download YOLO11n model (~50MB)
+- Takes ~30-60 seconds for first download
+- Subsequent runs load model instantly from cache
+
+Performance on Different Systems:
+- CPU (Modern): ~30-50 ms per frame (20-33 FPS)
+- GPU (RTX/NVIDIA): ~5-10 ms per frame (100+ FPS)
+- CPU (Older): ~100-200 ms per frame (5-10 FPS)
+
+Processing Interval:
+- Demo processes 1 frame every 0.1 seconds (10 FPS output)
+- Displays real-time video but inference happens every 100ms
+
+
+STEP 6: Customize for Your Needs
+==================================
+
+In occupancy_demo.py, you can modify:
+
+1. Confidence Threshold (line ~155):
+   detector = OccupancyDetector(
+       confidence_threshold=0.5,  # Lower = more sensitive (0-1)
+       buffer_size=3
+   )
+
+2. Processing Interval (line ~100):
+   process_interval = 0.1  # Change to 0.05 for 20 FPS or 0.2 for 5 FPS
+
+3. Stability Buffer (line ~155):
+   buffer_size=3  # Higher = more stable but slower to react
+
+
+TROUBLESHOOTING
+===============
+
+Issue: "Failed to open camera"
+Solution:
+- Check if camera is connected
+- Try camera_index=1 or 2 instead of 0
+- Close other camera applications
+
+Issue: "ModuleNotFoundError: No module named 'ultralytics'"
+Solution:
+- Run: pip install ultralytics --upgrade
+
+Issue: "Slow performance"
+Solution:
+- Lower the confidence threshold
+- Reduce frame resolution in camera setup
+- Use confidence_threshold=0.7 for faster processing
+
+Issue: "YOLO model download fails"
+Solution:
+- Check internet connection
+- Run: pip install --upgrade ultralytics
+- Manually download from: https://github.com/ultralytics/assets/releases/download/v8.2.0/yolo11n.pt
+
+
+NEXT STEPS AFTER DEMO
+=====================
+
+Once demo works:
+
+1. Test with actual CCTV feed:
+   - Modify script to use RTSP URL instead of camera_index
+   - Example: cap = cv2.VideoCapture('rtsp://camera_ip:554/stream')
+
+2. Fine-tune for your environment:
+   - Adjust confidence_threshold based on false positives/negatives
+   - Tweak buffer_size for stability vs responsiveness
+
+3. Add MQTT publishing:
+   - Integrate with your MQTT broker
+   - Publish "occupancy_detected" or "no_occupancy" every 0.1 seconds
+
+4. Deploy to server:
+   - Run script on your central processing server
+   - Modify to handle multiple camera feeds in parallel threads

@@ -1,0 +1,116 @@
+
+MQTT INTEGRATION GUIDE
+======================
+
+This script publishes occupancy data to an MQTT broker that can be 
+consumed by your smart building automation system.
+
+SETUP MQTT BROKER (on your server):
+===================================
+
+1. Install Mosquitto:
+   sudo apt-get install mosquitto mosquitto-clients
+
+2. Start Mosquitto:
+   sudo systemctl start mosquitto
+   sudo systemctl enable mosquitto
+
+3. Verify it's running:
+   mosquitto_sub -h localhost -t "analytics/occupancy"
+
+
+CONFIGURE THE DETECTOR:
+=======================
+
+Edit the CONFIG dictionary in occupancy_detector_mqtt.py:
+
+CONFIG = {
+    'zones': [
+        {'zone_id': 'room_501', 'camera_source': 0},  # Webcam
+        {'zone_id': 'room_502', 'camera_source': 'rtsp://admin:pwd@192.168.1.102:554/stream'},
+        # Add more rooms...
+    ],
+    'mqtt_broker': '192.168.1.50',  # Your server IP
+    'mqtt_port': 1883,
+    'confidence_threshold': 0.5,
+}
+
+
+RUN THE DETECTOR:
+=================
+
+python occupancy_detector_mqtt.py
+
+
+PUBLISHED DATA FORMAT:
+======================
+
+Topic: analytics/occupancy
+
+Message:
+{
+    "zone_id": "room_501",
+    "timestamp": "2025-12-05T10:30:45.123456",
+    "occupancy": true,
+    "person_count": 3,
+    "occupancy_text": "occupied"
+}
+
+
+SUBSCRIBE TO OCCUPANCY DATA (for testing):
+===========================================
+
+mosquitto_sub -h localhost -t "analytics/occupancy"
+
+You'll see messages like:
+{"zone_id": "room_501", "timestamp": "...", "occupancy": true, "person_count": 3, "occupancy_text": "occupied"}
+
+
+INTEGRATE WITH YOUR SYSTEM:
+============================
+
+In your control_logic.py (from Phase 5 plan), subscribe to these messages:
+
+```python
+import paho.mqtt.client as mqtt
+import json
+
+client = mqtt.Client()
+client.connect('192.168.1.50', 1883)
+
+def on_message(client, userdata, msg):
+    data = json.loads(msg.payload.decode())
+    zone_id = data['zone_id']
+    occupancy = data['occupancy']
+    person_count = data['person_count']
+
+    # Use this to trigger control logic
+    if occupancy:
+        # Turn on light and fan
+        publish_control_signal(zone_id, light='ON', fan='ON')
+    else:
+        # Potentially turn off after delay
+        pass
+
+client.subscribe('analytics/occupancy')
+client.on_message = on_message
+client.loop_forever()
+```
+
+
+MULTI-ZONE SUPPORT:
+===================
+
+To monitor multiple rooms simultaneously:
+
+CONFIG = {
+    'zones': [
+        {'zone_id': 'room_501', 'camera_source': 0},
+        {'zone_id': 'room_502', 'camera_source': 1},
+        {'zone_id': 'room_503', 'camera_source': 'rtsp://admin:pwd@192.168.1.103:554/stream'},
+        {'zone_id': 'conference_hall', 'camera_source': 'rtsp://admin:pwd@192.168.1.104:554/stream'},
+    ],
+    ...
+}
+
+Each zone runs in a separate thread and publishes independently.
