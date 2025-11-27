@@ -1,0 +1,11 @@
+# Raspberry Pi 4B Occupancy Detection Dependencies
+
+ultralytics>=8.0.0
+opencv-python>=4.5.0
+paho-mqtt>=1.6.0
+pyyaml>=6.0
+numpy>=1.21.0
+RPi.GPIO>=0.7.0
+
+# Optional: For better performance on Pi
+# opencv-python-headless  # Use this instead of opencv-python for headless systems

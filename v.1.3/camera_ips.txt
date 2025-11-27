@@ -1,0 +1,11 @@
+# Camera Configuration File
+# Format: room_id,rtsp_url
+# Lines starting with # are ignored
+
+room_501,rtsp://admin:password@192.168.1.101:554/stream
+room_502,rtsp://admin:password@192.168.1.102:554/stream
+room_503,rtsp://admin:password@192.168.1.103:554/stream
+
+# Add more cameras as needed:
+# room_504,rtsp://admin:password@192.168.1.104:554/stream
+# lobby,rtsp://admin:password@192.168.1.105:554/stream

@@ -1,0 +1,22 @@
+# Raspberry Pi Occupancy Detection Configuration
+
+# MQTT Settings
+mqtt_broker: "192.168.1.50"
+mqtt_port: 1883
+
+# Processing Settings
+processing_interval_sec: 1.0        # Process every N seconds (1.0 = 1fps processing)
+static_timeout_sec: 10              # Seconds of no motion before considering empty
+confidence_threshold: 0.6           # YOLO detection confidence threshold
+min_motion_score: 300               # Minimum motion score for motion detection
+
+# Thermal Management
+temp_threshold_celsius: 75          # CPU temperature threshold for throttling
+
+# GPIO Relay Control (for classroom automation)
+gpio_pin: 18                        # BCM pin number for relay control
+gpio_active_high: true              # true = HIGH turns relay ON, false = LOW turns relay ON
+
+# Optional: MQTT Authentication (uncomment if needed)
+# mqtt_username: "your_username"
+# mqtt_password: "your_password"

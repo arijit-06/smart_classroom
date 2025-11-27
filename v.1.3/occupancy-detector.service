@@ -1,0 +1,26 @@
+# Systemd service file for Raspberry Pi Occupancy Detector
+# Copy to /etc/systemd/system/ and enable with:
+# sudo systemctl enable occupancy-detector.service
+# sudo systemctl start occupancy-detector.service
+
+[Unit]
+Description=Multi-Camera Occupancy Detection System v1.3
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/occupancy-detection/v.1.3
+ExecStart=/usr/bin/python3 occupancy_detector_pi.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Environment variables (adjust as needed)
+Environment=PYTHONPATH=/home/pi/occupancy-detection/v.1.3
+
+[Install]
+WantedBy=multi-user.target
