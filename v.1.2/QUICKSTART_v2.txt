@@ -1,0 +1,172 @@
+
+OCCUPANCY DETECTION v2 - QUICK START GUIDE
+===========================================
+
+INSTALLATION (One-time)
+=======================
+
+1. Install dependencies:
+   pip install opencv-python ultralytics numpy
+
+2. Download YOLO8n model (automatic on first run, ~50MB)
+
+3. Place occupancy_detector_v2_fixed.py in your project folder
+
+
+RUNNING THE DEMO TODAY
+======================
+
+1. Open terminal/command prompt
+
+2. Run:
+   python occupancy_detector_v2_fixed.py
+
+3. Wait for model to load (~30 seconds first time)
+
+4. You'll see live demo window with:
+   - Current occupancy status (OCCUPIED/EMPTY)
+   - Number of persons detected
+   - Motion status (YES/NO)
+   - Confidence level
+   - Time since last motion
+
+
+WHAT TO TEST
+============
+
+Test 1: Real Person (Best case)
+  - Walk into camera view
+  - Move around
+  - Observe: OCCUPIED status (green)
+  - Stop moving for 10 seconds
+  - Observe: AUTO-OFF countdown
+  - Lights conceptually turn off after 10s
+
+Test 2: Static Objects
+  - Hold up picture of person
+  - Observe: No detection (motion required)
+  - Move the picture
+  - Observe: Still no occupancy (false positive eliminated)
+
+Test 3: Low-Light Test
+  - Press 'l' in demo
+  - Observe: Frame dims (simulates low-light)
+  - Person still detected (CLAHE preprocessing works)
+
+Test 4: Multiple People
+  - Get 2-3 people in frame
+  - Observe: Person count increases
+  - All moving: OCCUPIED
+  - All static: Auto-off after 10s
+
+Test 5: Screen/Poster Test
+  - Show poster of person on screen
+  - Observe: Detection YES but OCCUPANCY = NO (no motion)
+  - Move poster around: Still OCCUPANCY = NO
+
+
+KEY METRICS TO NOTE
+===================
+
+- Processing count: Should increase by ~5 every 1 second
+  (processing every 200ms = 5 fps processing)
+
+- Persons detected: Matches actual count
+
+- Motion detected: Only TRUE when people actually move
+
+- Confidence: Should show HIGH when both detection + motion
+
+- Time since motion: Counts up to 10 seconds
+
+
+KEYBOARD SHORTCUTS
+==================
+
+q  : Quit
+s  : Take screenshot
+l  : Low-light test mode
+
+
+EXPECTED CONSOLE OUTPUT
+=======================
+
+[INIT] Loading YOLO8n model (stable version)...
+[✓] YOLO8n loaded successfully
+[DEMO] Opening camera 0...
+[✓] Camera opened successfully
+[INFO] Processing interval: 0.2s
+[INFO] Static timeout (10s rule): 10s
+
+[Process 1] EMPTY | Persons: 0 | Motion: False | Motion px: 0 | Conf: NONE
+[Process 2] OCCUPIED | Persons: 1 | Motion: True | Motion px: 1245 | Conf: HIGH
+[Process 3] OCCUPIED | Persons: 1 | Motion: True | Motion px: 892 | Conf: HIGH
+
+[STATE CHANGE] 2025-11-27T12:15:30 → OCCUPIED
+[STATE CHANGE] 2025-11-27T12:15:45 → EMPTY
+
+======================================================================
+OCCUPANCY DETECTION v2 - FINAL STATISTICS
+======================================================================
+Total frames captured: 500
+Frames processed: 50
+Processing efficiency: 10.0%
+State changes detected: 2
+
+State Change History:
+  2025-11-27T12:15:30.123: OCCUPIED
+  2025-11-27T12:15:45.456: EMPTY
+======================================================================
+
+KEY IMPROVEMENTS IMPLEMENTED:
+✓ Fix #1: YOLO8n (stable, proven)
+✓ Fix #2: Optical Flow motion detection
+✓ Fix #3: CLAHE low-light preprocessing
+✓ Fix #4: Temporal validation (10-second rule)
+✓ Fix #5: Reduced inference load (200-500ms intervals)
+✓ Fix #6: State machine (eliminates frame jitter)
+✓ Fix #7: Publish only on state changes
+======================================================================
+
+
+NEXT STEPS
+==========
+
+1. Demo complete → Show results
+2. Modify for RTSP stream:
+
+   cap = cv2.VideoCapture('rtsp://admin:password@192.168.1.101:554/stream')
+
+3. Adjust parameters if needed:
+   - confidence_threshold: 0.5-0.7 (higher = stricter)
+   - motion_threshold: 300-800 (lower = more sensitive)
+   - static_timeout: 10 (can adjust if 10s too long/short)
+
+4. Test with actual CCTV cameras
+
+5. Deploy MQTT version for central server
+
+
+TROUBLESHOOTING
+===============
+
+Problem: "Module not found: cv2"
+Solution: pip install opencv-python
+
+Problem: "CUDA not available" (just a warning)
+Solution: Normal - system uses CPU, perfectly fine
+
+Problem: Slow inference (>200ms)
+Solution: Your CPU slower than expected
+   - Reduce frame resolution
+   - Reduce processing frequency (0.3s instead of 0.2s)
+
+Problem: False positives still occurring
+Solution: 
+   - Increase confidence_threshold to 0.7
+   - Increase motion_threshold to 800
+
+Problem: Low-light still too dark
+Solution: 
+   - Run in slightly better lit room for demo
+   - Note: Full system will use thermal for true 24/7 coverage

@@ -1,0 +1,262 @@
+
+OCCUPANCY DETECTION v2 - DEPLOYMENT GUIDE
+==========================================
+
+OPTION 1: DEVELOPMENT (Demo Today)
+===================================
+
+File: occupancy_detector_v2_fixed.py
+
+Installation:
+$ pip install -r requirements_v2.txt
+
+Run:
+$ python occupancy_detector_v2_fixed.py
+
+Use case:
+- Live demonstration on PC with webcam
+- Testing and validation
+- Single room demo
+
+Output:
+- Live video window with occupancy status
+- Real-time visualization
+- Console logging
+
+
+OPTION 2: PRODUCTION (Server Deployment)
+=========================================
+
+File: occupancy_detector_mqtt_v2.py
+
+Installation:
+$ pip install -r requirements_v2.txt
+$ sudo apt-get install mosquitto mosquitto-clients
+
+Configure MQTT Broker:
+$ sudo systemctl start mosquitto
+$ sudo systemctl enable mosquitto
+
+Configuration:
+Edit CONFIG in occupancy_detector_mqtt_v2.py
+
+CONFIG = {
+    'zones': [
+        {
+            'zone_id': 'room_501',
+            'camera_source': 'rtsp://admin:password@192.168.1.101:554/stream',
+        },
+        {
+            'zone_id': 'room_502',
+            'camera_source': 'rtsp://admin:password@192.168.1.102:554/stream',
+        },
+        # Add all rooms here
+    ],
+    'mqtt_broker': '192.168.1.50',  # Your server IP
+    'mqtt_port': 1883,
+    'confidence_threshold': 0.6,
+    'motion_threshold': 500,
+    'static_timeout': 10,
+    'processing_interval': 0.2,
+}
+
+Run:
+$ python occupancy_detector_mqtt_v2.py
+
+Use case:
+- Central processing server (Linux)
+- Multiple cameras simultaneously
+- Continuous operation (24/7)
+- MQTT integration with control system
+
+
+HARDWARE REQUIREMENTS
+====================
+
+CPU-based (Recommended for ₹155k budget):
+- Intel i5/i7 or Ryzen 5/7
+- 8GB RAM minimum
+- 16GB SSD space
+
+Estimated load per camera:
+- YOLO8n: 30-50ms per frame
+- Optical Flow: 5-10ms per frame
+- Total: ~50ms (200ms interval = safe margin)
+- CPU: ~40-60% per room
+- Memory: ~150-200MB per room
+
+Scalability:
+- 1 room: Single server fine
+- 5 rooms: Single server at ~100% CPU
+- 10+ rooms: Consider multi-threading optimization
+
+
+TESTING CHECKLIST - BEFORE DEPLOYMENT
+=====================================
+
+☐ Frame capture: Verify RTSP stream accessible
+☐ Low-light test: Run in evening (sundown testing)
+☐ Motion detection: Test different movement types
+  - Walking
+  - Sitting down
+  - Head movement
+  - Arm gestures
+☐ False positive tests:
+  - Picture of person (should NOT detect)
+  - Poster on wall (should NOT detect)
+  - Screen with video (should NOT detect)
+☐ 10-second rule:
+  - Person enters → Lights ON
+  - Person stops moving → Lights stay ON
+  - Wait 10 seconds → AUTO-OFF
+  - Person moves again → Lights back ON
+☐ State stability:
+  - No flickering (state changes)
+  - Smooth transitions
+☐ MQTT publishing:
+  - Subscribe: mosquitto_sub -t "analytics/occupancy"
+  - Verify messages only on state change
+  - Verify message format JSON
+☐ Performance monitoring:
+  - CPU usage < 80%
+  - Memory stable
+  - No crashes after 1 hour
+
+
+INTEGRATION WITH CONTROL SYSTEM
+================================
+
+Subscribing to occupancy data:
+
+import json
+import paho.mqtt.client as mqtt
+
+def on_occupancy_update(client, userdata, msg):
+    data = json.loads(msg.payload.decode())
+    zone = data['zone_id']
+    occupancy = data['occupancy']
+
+    if occupancy:
+        # Turn on lights and fans
+        control.turn_on_light(zone)
+        control.turn_on_fan(zone)
+    else:
+        # Turn off after delay
+        schedule.turn_off(zone, delay_seconds=300)
+
+client = mqtt.Client()
+client.connect('192.168.1.50', 1883)
+client.subscribe('analytics/occupancy')
+client.on_message = on_occupancy_update
+client.loop_forever()
+
+
+MONITORING & LOGGING
+====================
+
+Log file setup:
+
+Add to occupancy_detector_mqtt_v2.py:
+
+import logging.handlers
+
+file_handler = logging.handlers.RotatingFileHandler(
+    'occupancy_detector.log',
+    maxBytes=10485760,  # 10MB
+    backupCount=5
+)
+logger.addHandler(file_handler)
+
+Monitor in real-time:
+$ tail -f occupancy_detector.log
+
+Or:
+$ mosquitto_sub -t "analytics/occupancy" | tee occupancy_stream.log
+
+
+TROUBLESHOOTING
+===============
+
+Low detection accuracy:
+1. Increase confidence_threshold to 0.7
+2. Test in better-lit area
+3. Check camera resolution (640x480 minimum)
+
+Flickering occupancy status:
+1. Increase motion_threshold to 800
+2. Increase static_timeout to 15 seconds
+3. Verify optical flow corner detection working
+
+High CPU usage (>100%):
+1. Reduce number of simultaneous zones
+2. Increase processing_interval to 0.5s
+3. Run on more powerful CPU
+
+MQTT messages not publishing:
+1. Verify broker running: systemctl status mosquitto
+2. Check connection: mosquitto_sub -t "analytics/occupancy"
+3. Verify firewall not blocking port 1883
+4. Check CONFIG['mqtt_broker'] correct IP
+
+Camera connection timeout:
+1. Verify RTSP URL valid
+2. Test in VLC: File → Open Network → rtsp://...
+3. Check network connectivity
+4. Verify camera firmware up-to-date
+
+
+PERFORMANCE OPTIMIZATION
+=========================
+
+For 5+ rooms:
+
+1. Multi-threading (already implemented)
+2. GPU acceleration (if available):
+   - Install CUDA
+   - YOLO automatically uses GPU
+   - Can process 10+ rooms on single GPU
+
+3. Model optimization:
+   - Use YOLO8n (smallest - currently using)
+   - Could downgrade to YOLO8s if needed
+   - Quantization for CPU deployment
+
+4. Frame resolution:
+   - Currently 640x480
+   - Can reduce to 480x360 for faster processing
+   - Trade-off: Slight accuracy loss
+
+
+MAINTENANCE & UPDATES
+=====================
+
+Regular checks:
+- Monitor CPU usage trends
+- Check memory leaks (run for 72+ hours)
+- Log rotation (auto, 10MB files)
+- Update YOLO models (quarterly)
+
+Update YOLO model:
+$ pip install --upgrade ultralytics
+
+Restart service:
+$ systemctl restart occupancy-detector
+
+
+SECURITY CONSIDERATIONS
+=======================
+
+MQTT broker:
+- Don't expose port 1883 to internet
+- Use authentication if possible
+- Monitor connection attempts
+
+Camera credentials:
+- Use strong passwords
+- Change default credentials
+- Don't commit to Git
+
+Logs:
+- Don't log sensitive data
+- Rotate logs regularly
+- Secure log file access (chmod 600)
